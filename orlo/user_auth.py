@@ -45,6 +45,7 @@ class conditional_auth(object):
                 set_current_user_as(User('nobody'))
                 rv = self.decorator(func(*args, **kwargs))
                 print('foo')
+                print(rv)
                 return rv
             else:
                 print('sec disabled')
@@ -54,6 +55,7 @@ class conditional_auth(object):
                 rv = func(*args, **kwargs)
                 print('foo')
                 print(rv)
+                return rv
         return wrapped
 
 
@@ -172,11 +174,8 @@ def get_token():
     """
     ttl = config.getint('security', 'token_ttl')
     token = token_manager.generate(g.current_user.name, ttl)
-    print('bar')
-    rv = jsonify({
+    return jsonify({
         'token': token.decode('ascii'),
         'duration': config.get('security', 'token_ttl')
     })
-    print(rv)
-    return rv
 
