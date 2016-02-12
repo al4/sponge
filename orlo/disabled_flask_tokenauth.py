@@ -12,10 +12,19 @@ from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
 from functools import wraps
 from flask import request, make_response
-from flask.ext.httpauth import HTTPAuth
-from orlo import app
 
 __author__ = 'alforbes'
+
+"""
+Flask module for token authentication, using itsdangerous for actual crypto
+
+This module borrows heavily from Flask-HTTPAuth, and Miguel Grinberg's blog
+at http://blog.miguelgrinberg.com/
+
+Many thanks to Miguel for his great contributions!
+"""
+
+# TODO publish this module separately, it operates independently of Orlo
 
 
 class TokenAuthError(Exception):

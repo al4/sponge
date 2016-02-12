@@ -2,18 +2,70 @@ from orlo import app
 from orlo.config import config
 from orlo.exceptions import OrloAuthError
 from flask.ext.httpauth import HTTPBasicAuth
-from flask_tokenauth import TokenAuth
+from flask.ext.tokenauth import TokenAuth, TokenManager
 from flask import request, jsonify, g, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
-from flask_tokenauth import TokenManager
+from functools import update_wrapper, wraps
+
 
 # initialization
-
 user_auth = HTTPBasicAuth()
 token_auth = TokenAuth(config.get('security', 'secret_key'))
 token_manager = TokenManager(secret_key=config.get('security', 'secret_key'))
+
+
+class conditional_auth(object):
+    """
+    Decorator which wraps a decorator, to only apply it if auth is enabled
+    """
+    def __init__(self, decorator):
+        print("ini with {}".format(decorator.__name__))
+        self.decorator = decorator
+        update_wrapper(self, decorator)
+
+    def __call__(self, func):
+        """
+        Call method
+        """
+        print("CALL func {}".format(func.__name__))
+
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            """
+            Wrapped method
+            """
+            print("WRAPPED CALL {}".format(func.__name__))
+            if config.getboolean('security', 'enabled'):
+                print('sec enabled')
+                print(self.decorator.__name__)
+                print(type(self.decorator))
+                print(type(func))
+                set_current_user_as(User('nobody'))
+                rv = self.decorator(func(*args, **kwargs))
+                print('foo')
+                return rv
+            else:
+                print('sec disabled')
+                print(self.decorator.__name__)
+                print(type(self.decorator))
+                print(type(func))
+                rv = func(*args, **kwargs)
+                print('foo')
+                print(rv)
+        return wrapped
+
+
+# def conditional_auth(decorator, function):
+#     @wraps(function)
+#     def decorated(*args, **kwargs):
+#         if config.get('security', 'enabled'):
+#             decorator(function(*args, **kwargs))
+#         else:
+#             function(*args, **kwargs)
+#
+#     return decorated
 
 
 class User(object):
@@ -66,12 +118,9 @@ class User(object):
         return User(name)
 
 
-@user_auth.verify_password
+@conditional_auth(user_auth.verify_password)
 def verify_password(username=None, password=None):
     app.logger.debug("Verify_password called")
-    if not config.getboolean('security', 'enabled'):
-        set_current_user_as(User('nobody'))
-        return True
 
     if not password:
         return False
@@ -84,12 +133,9 @@ def verify_password(username=None, password=None):
     return True
 
 
-@token_auth.verify_token
+@conditional_auth(token_auth.verify_token)
 def verify_token(token=None):
     app.logger.debug("Verify_token called")
-    if not config.getboolean('security', 'enabled'):
-        set_current_user_as(User('nobody'))
-        return True
 
     if not token:
         return False
@@ -118,33 +164,19 @@ def auth_error():
     return response
 
 
-# @app.before_request
-# def before_request():
-#     """
-#     Check the user is authenticated
-#     """
-#     if config.getboolean('security', 'enabled') \
-#             and request.endpoint != 'get_token':
-#         try:
-#             if not g.current_user.confirmed:
-#                 raise OrloAuthError("Not authenticated for endpoint {}".format(
-#                     request.endpoint))
-#         except AttributeError:
-#             # current_user is not set
-#             raise OrloAuthError("Not authenticated")
-
-
 @app.route('/token')
-@user_auth.login_required
+@conditional_auth(user_auth.login_required)
 def get_token():
     """
     Get a token
     """
     ttl = config.getint('security', 'token_ttl')
     token = token_manager.generate(g.current_user.name, ttl)
-
-    return jsonify({
+    print('bar')
+    rv = jsonify({
         'token': token.decode('ascii'),
         'duration': config.get('security', 'token_ttl')
     })
+    print(rv)
+    return rv
 
