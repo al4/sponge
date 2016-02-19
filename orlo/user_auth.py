@@ -21,7 +21,6 @@ class conditional_auth(object):
     Decorator which wraps a decorator, to only apply it if auth is enabled
     """
     def __init__(self, decorator):
-        print("ini with {}".format(decorator.__name__))
         self.decorator = decorator
         update_wrapper(self, decorator)
 
@@ -29,45 +28,18 @@ class conditional_auth(object):
         """
         Call method
         """
-        print("CALL func {}".format(func.__name__))
-
         @wraps(func)
         def wrapped(*args, **kwargs):
             """
             Wrapped method
             """
-            print("WRAPPED CALL {}".format(func.__name__))
             if config.getboolean('security', 'enabled'):
-                print('sec enabled')
-                print(self.decorator.__name__)
-                print(type(self.decorator))
-                print(type(func))
-                set_current_user_as(User('nobody'))
-                rv = self.decorator(func(*args, **kwargs))
-                print('foo')
-                print(rv)
-                return rv
+                app.logger.debug("Security enabled")
+                return self.decorator(func)(*args, **kwargs)
             else:
-                print('sec disabled')
-                print(self.decorator.__name__)
-                print(type(self.decorator))
-                print(type(func))
-                rv = func(*args, **kwargs)
-                print('foo')
-                print(rv)
-                return rv
+                app.logger.debug("Security disabled")
+                return func(*args, **kwargs)
         return wrapped
-
-
-# def conditional_auth(decorator, function):
-#     @wraps(function)
-#     def decorated(*args, **kwargs):
-#         if config.get('security', 'enabled'):
-#             decorator(function(*args, **kwargs))
-#         else:
-#             function(*args, **kwargs)
-#
-#     return decorated
 
 
 class User(object):
@@ -120,7 +92,7 @@ class User(object):
         return User(name)
 
 
-@conditional_auth(user_auth.verify_password)
+@user_auth.verify_password
 def verify_password(username=None, password=None):
     app.logger.debug("Verify_password called")
 
@@ -135,7 +107,7 @@ def verify_password(username=None, password=None):
     return True
 
 
-@conditional_auth(token_auth.verify_token)
+@token_auth.verify_token
 def verify_token(token=None):
     app.logger.debug("Verify_token called")
 
