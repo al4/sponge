@@ -69,6 +69,9 @@ class OrloAuthTest(TestCase):
         self.app.config['DEBUG'] = False
         self.app.config['TRAP_HTTP_EXCEPTIONS'] = True
         self.app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = False
+        self.app.config['SQLALCHEMY_POOL_SIZE'] = None
+        self.app.config['SQLALCHEMY_POOL_RECYCLE'] = None
+        self.app.config['SQLALCHEMY_MAX_OVERFLOW'] = None
 
         return self.app
 
