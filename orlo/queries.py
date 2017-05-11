@@ -478,6 +478,10 @@ def package_versions(platform=None):
         sub_q = sub_q \
             .join(Release) \
             .filter(Release.platforms.any(Platform.name == platform))
+
+    # Filter out packages which are part of a release in progress, see issue#52
+    sub_q.filter(Release.packages.any(Package.status != "IN_PROGRESS"))
+
     sub_q = sub_q \
         .group_by(Package.name) \
         .subquery()
