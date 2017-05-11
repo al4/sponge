@@ -300,7 +300,7 @@ def releases(limit=None, offset=None, asc=None, **kwargs):
     return query
 
 
-def packages(**kwargs):
+def packages(limit=None, offset=None, asc=None, **kwargs):
     """
     Return a list of packages
 
@@ -321,7 +321,26 @@ def packages(**kwargs):
     except AttributeError as e:
         raise InvalidUsage("An invalid field was specified")
 
-    query = query.order_by(Package.stime.asc())
+    if asc:
+        stime_field = Package.stime.asc
+    else:
+        stime_field = Package.stime.desc
+
+
+    query = query.order_by(stime_field())
+
+    if limit:
+        try:
+            limit = int(limit)
+        except ValueError:
+            raise InvalidUsage("limit must be a valid integer value")
+        query = query.limit(limit)
+    if offset:
+        try:
+            offset = int(offset)
+        except ValueError:
+            raise InvalidUsage("offset must be a valid integer value")
+        query = query.offset(offset)
 
     return query
 

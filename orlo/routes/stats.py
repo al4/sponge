@@ -135,6 +135,8 @@ def stats_():
 
     :query string stime: The lower bound of the time period to filter on
     :query string ftime: The upper bound of the time period to filter on
+    
+    stime and ftime both filter on the release start time.
     """
     s_stime = request.args.get('stime')
     s_ftime = request.args.get('ftime')
